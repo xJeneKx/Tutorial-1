@@ -1,11 +1,11 @@
 /*jslint node: true */
 'use strict';
-const constants = require('byteballcore/constants.js');
-const conf = require('byteballcore/conf');
-const db = require('byteballcore/db');
-const eventBus = require('byteballcore/event_bus');
-const validationUtils = require('byteballcore/validation_utils');
-const headlessWallet = require('headless-byteball');
+const constants = require('ocore/constants.js');
+const conf = require('ocore/conf');
+const db = require('ocore/db');
+const eventBus = require('ocore/event_bus');
+const validationUtils = require('ocore/validation_utils');
+const headlessWallet = require('headless-obyte');
 
 let assocDeviceAddressToPeerAddress = {};
 let assocDeviceAddressToMyAddress = {};
@@ -18,16 +18,16 @@ eventBus.once('headless_wallet_ready', () => {
 	headlessWallet.setupChatEventHandlers();
 	
 	eventBus.on('paired', (from_address, pairing_secret) => {
-		const device = require('byteballcore/device.js');
+		const device = require('ocore/device.js');
 		device.sendMessageToDevice(from_address, 'text', "Please send me your address");
 	});
 	
 	eventBus.on('text', (from_address, text) => {
-		const device = require('byteballcore/device.js');
+		const device = require('ocore/device.js');
 		text = text.trim();
 		if (validationUtils.isValidAddress(text)) {
 			assocDeviceAddressToPeerAddress[from_address] = text;
-			device.sendMessageToDevice(from_address, 'text', 'Saved your Byteball address');
+			device.sendMessageToDevice(from_address, 'text', 'Saved your Obyte address');
 			headlessWallet.issueNextMainAddress((address) => {
 				assocMyAddressToDeviceAddress[address] = from_address;
 				assocDeviceAddressToMyAddress[from_address] = address;
@@ -47,7 +47,7 @@ eventBus.once('headless_wallet_ready', () => {
  * user pays to the bot
  */
 eventBus.on('new_my_transactions', (arrUnits) => {
-	const device = require('byteballcore/device.js');
+	const device = require('ocore/device.js');
 	db.query("SELECT address, amount, asset FROM outputs WHERE unit IN (?)", [arrUnits], rows => {
 		rows.forEach(row => {
 			let deviceAddress = assocMyAddressToDeviceAddress[row.address];
@@ -63,7 +63,7 @@ eventBus.on('new_my_transactions', (arrUnits) => {
  * payment is confirmed
  */
 eventBus.on('my_transactions_became_stable', (arrUnits) => {
-	const device = require('byteballcore/device.js');
+	const device = require('ocore/device.js');
 	db.query("SELECT address, amount, asset FROM outputs WHERE unit IN (?)", [arrUnits], rows => {
 		rows.forEach(row => {
 			let deviceAddress = assocMyAddressToDeviceAddress[row.address];
